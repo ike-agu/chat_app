@@ -2,7 +2,7 @@ const nameInput = document.getElementById("name-input");
 const textInput = document.getElementById("message-input");
 const sendBtn = document.getElementById("send-btn");
 const displayChatArea = document.getElementById("display-message");
-const messageSent = document.getElementById("message-success");
+const messageAlert = document.getElementById("message-alert");
 
 const form = document.getElementById("message-form");
 
@@ -13,7 +13,7 @@ async function loadChat(){
   try {
     const res = await fetch(`${API_URL}/chat`);
     const data = await res.json();
-    
+
     displayChatArea.textContent = ""
     data.forEach(element => {
       let userMessage = document.createElement("p");
@@ -27,5 +27,45 @@ async function loadChat(){
 }
 
 loadChat();
+setInterval(loadChat, 2000);
 
-// sendBtn.addEventListener("click", loadChat);
+//  ==== add chat ======
+async function sendChat(event){
+  event.preventDefault();
+
+   const name = nameInput.value.trim()
+   const text = textInput.value.trim()
+  // ==add validation=====
+  if(!name || !text){
+    messageAlert.textContent = "please enter both name and text";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, text }),
+    });
+
+    const data = await res.json();
+    if(!res.ok){
+      messageAlert.textContent = data.error || "Failed to send message";
+      return;
+    }
+
+    messageAlert.textContent = "";
+
+    // clear inputs
+    nameInput.value = ""
+    textInput.value = ""
+
+    loadChat();
+
+  } catch (err) {
+    messageAlert.textContent = "Error sending chat";
+    console.error(err)
+  }
+}
+
+form.addEventListener("submit", sendChat);
