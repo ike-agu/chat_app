@@ -9,17 +9,43 @@ const form = document.getElementById("message-form");
 
 const API_URL = "http://localhost:3000";
 
-async function loadChat(){
+async function loadChat() {
+  // Check scroll position BEFORE rendering
+  const isNearBottom =
+    displayChatArea.scrollHeight -
+      displayChatArea.scrollTop -
+      displayChatArea.clientHeight <
+    50;
+
   try {
     const res = await fetch(`${API_URL}/chat`);
     const data = await res.json();
 
-    displayChatArea.textContent = ""
-    data.forEach(element => {
-      let userMessage = document.createElement("p");
-      userMessage.textContent = `${element.name} - ${element.text}`
-      displayChatArea.appendChild(userMessage);
+    displayChatArea.textContent = "";
+    data.forEach((element) => {
+      const messageAreaDiv = document.createElement("div");
+      messageAreaDiv.className = "chat-message";
+
+      const nameEl = document.createElement("div");
+      nameEl.className = "chat-name";
+      nameEl.textContent = element.name;
+
+      const textEl = document.createElement("div");
+      textEl.className = "chat-text";
+      textEl.textContent = element.text;
+
+      messageAreaDiv.appendChild(nameEl);
+      messageAreaDiv.appendChild(textEl);
+      displayChatArea.appendChild(messageAreaDiv);
     });
+
+    // Scroll ONLY if user was near bottom
+    if (isNearBottom) {
+      requestAnimationFrame(() => {
+        displayChatArea.scrollTop = displayChatArea.scrollHeight;
+      });
+    }
+
   } catch (err) {
     displayChatArea.textContent = "Could not load any chat at the moment";
     console.error(err);
@@ -35,7 +61,7 @@ async function sendChat(event){
 
    const name = nameInput.value.trim()
    const text = textInput.value.trim()
-  // ==add validation=====
+  // add validation
   if(!name || !text){
     messageAlert.textContent = "please enter both name and text";
     return;
