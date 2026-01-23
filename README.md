@@ -42,6 +42,7 @@ Chattiamo is a simple full-stack chat application built with Node.js, Express, a
 
 1. ### Clone the repository
 git clone <git@github.com>:ike-agu/chat_app.git
+
 cd chat_app
 
 2. ### Install server dependencies
