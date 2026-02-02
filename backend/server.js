@@ -13,8 +13,12 @@ const chatList = [];
 //call back for new chats
 const callBackForNewChats = [];
 
+//id counter to track "latestId"
+let nextId = 1;
+
 function displayChat() {
   return chatList.map((item) => ({
+    id: item.id,
     name: item.name,
     text: item.text,
   }));
@@ -24,16 +28,21 @@ app.get("/", (req, res) => {
   res.send("Hello, from the server!");
 });
 
-// ===Get request====
+// ==============GET REQUEST=============
 app.get("/chat", (req, res) => {
   console.log("Received a request from a chat");
 
   const since = Number(req.query.since || 0);
 
-  if (chatList.length > since) {
-    const allMessages = displayChat();
-    const newMessages = allMessages.slice(since); //only chats after since
-    return res.json({ messages: newMessages, latestCount: chatList.length });
+  // Find messages with id > since
+  const allMessages = displayChat();
+  const newMessages = allMessages.filter((message) => message.id > since);
+
+  // If we have new messages, return them immediately
+  if (newMessages.length > 0) {
+    const latestId =
+      chatList.length > 0 ? chatList[chatList.length - 1].id : since;
+    return res.json({ messages: newMessages, latestId });
   }
 
   const entry = { res, since, timer: null };
@@ -44,7 +53,7 @@ app.get("/chat", (req, res) => {
     return res.status(204).end();
   }, 25000);
 
-  // If user closes tab or disconnects, we must clean up
+  // clean up if user closes tab or disconnects
   req.on("close", () => {
     clearTimeout(entry.timer);
     const index = callBackForNewChats.indexOf(entry);
@@ -55,7 +64,7 @@ app.get("/chat", (req, res) => {
   callBackForNewChats.push(entry);
 });
 
-// ==Post method ==
+// =========POST REQUEST ================
 app.post("/chat", (req, res) => {
   const body = req.body;
 
@@ -67,7 +76,6 @@ app.post("/chat", (req, res) => {
   const name = String(body.name || "").trim();
   const text = String(body.text || "").trim();
 
-  // validate name and text
   if (!name) {
     return res.status(400).json({ error: "Name cannot be empty" });
   }
@@ -76,24 +84,21 @@ app.post("/chat", (req, res) => {
     return res.status(400).json({ error: "Text cannot be empty" });
   }
 
-  // save message
-  chatList.push({ name, text });
+  const message = { id: nextId++, name, text };
+  chatList.push(message);
 
+  //respond to any waiting long poll
+  const allMessages = displayChat();
+  const latestId = message.id;
   while (callBackForNewChats.length > 0) {
     const callBackEntry = callBackForNewChats.pop();
-
     clearTimeout(callBackEntry.timer);
 
-    const allMessages = displayChat();
-    const newMessages = allMessages.slice(callBackEntry.since);
-
-    callBackEntry.res.json({
-      messages: newMessages,
-      latestCount: chatList.length,
-    });
+    const newMessages = allMessages.filter((m) => m.id > callBackEntry.since);
+    callBackEntry.res.json({ messages: newMessages, latestId });
   }
 
-  return res.status(201).json({ status: "OK", saved: { name, text } });
+  return res.status(201).json({ status: "OK", saved: message });
 });
 
 app.listen(port, () => {
