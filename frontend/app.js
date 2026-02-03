@@ -6,7 +6,11 @@ const messageAlert = document.getElementById("message-alert");
 
 const form = document.getElementById("message-form");
 
-const API_URL = "https://ike-agu-chat-app-backend.hosting.codeyourfuture.io/";
+const API_URL =
+  location.hostname === "localhost"
+    ? "http://localhost:3000"
+    : "https://ike-agu-chat-app-backend.hosting.codeyourfuture.io";
+
 
 let lastSeenMessageId = 0;
 let polling = false; //prevents overlapping polls
