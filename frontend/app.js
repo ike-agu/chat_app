@@ -6,10 +6,13 @@ const messageAlert = document.getElementById("message-alert");
 
 const form = document.getElementById("message-form");
 
+const API_URL = "https://ike-agu-chat-app-backend.hosting.codeyourfuture.io/";
 
-const API_URL = "http://localhost:3000";
+let lastSeenMessageId = 0;
+let polling = false; //prevents overlapping polls
+let stopPolling = false; // optional: can be set to true when leaving page
 
-async function loadChat() {
+function appendMessages(messages) {
   // Check scroll position BEFORE rendering
   const isNearBottom =
     displayChatArea.scrollHeight -
@@ -17,52 +20,95 @@ async function loadChat() {
       displayChatArea.clientHeight <
     50;
 
-  try {
-    const res = await fetch(`${API_URL}/chat`);
-    const data = await res.json();
+  for (const element of messages) {
+    const messageAreaDiv = document.createElement("div");
+    messageAreaDiv.className = "chat-message";
 
-    displayChatArea.textContent = "";
-    data.forEach((element) => {
-      const messageAreaDiv = document.createElement("div");
-      messageAreaDiv.className = "chat-message";
+    const nameEl = document.createElement("div");
+    nameEl.className = "chat-name";
+    nameEl.textContent = element.name;
 
-      const nameEl = document.createElement("div");
-      nameEl.className = "chat-name";
-      nameEl.textContent = element.name;
+    const textEl = document.createElement("div");
+    textEl.className = "chat-text";
+    textEl.textContent = element.text;
 
-      const textEl = document.createElement("div");
-      textEl.className = "chat-text";
-      textEl.textContent = element.text;
+    messageAreaDiv.appendChild(nameEl);
+    messageAreaDiv.appendChild(textEl);
+    displayChatArea.appendChild(messageAreaDiv);
+  }
 
-      messageAreaDiv.appendChild(nameEl);
-      messageAreaDiv.appendChild(textEl);
-      displayChatArea.appendChild(messageAreaDiv);
+  // Scroll ONLY if user was near bottom
+  if (isNearBottom) {
+    requestAnimationFrame(() => {
+      displayChatArea.scrollTop = displayChatArea.scrollHeight;
     });
-
-    // Scroll ONLY if user was near bottom
-    if (isNearBottom) {
-      requestAnimationFrame(() => {
-        displayChatArea.scrollTop = displayChatArea.scrollHeight;
-      });
-    }
-
-  } catch (err) {
-    displayChatArea.textContent = "Could not load any chat at the moment";
-    console.error(err);
   }
 }
 
-loadChat();
-setInterval(loadChat, 2000);
+async function initialChatLoad() {
+  displayChatArea.textContent = "";
+  lastSeenMessageId = 0;
+  await pollOnce(); //  will fetch since=0 and append results
+}
 
-//  ==== add chat ======
-async function sendChat(event){
+async function pollOnce() {
+  if (polling || stopPolling) return;
+  polling = true;
+
+  try {
+    const res = await fetch(`${API_URL}/chat?since=${lastSeenMessageId}`);
+
+    //long poll timeout, no updates
+    if (res.status === 204) {
+      polling = false;
+
+      return pollOnce();
+    }
+
+    if (!res.ok) {
+      throw new Error(`GET /chat failed: ${res.status}`);
+    }
+
+    const data = await res.json(); // expects { messages, latestId }
+    const messages = data.messages || [];
+
+    if (messages.length > 0) {
+      appendMessages(messages);
+    }
+
+    if (typeof data.latestId === "number") {
+      lastSeenMessageId = data.latestId;
+    } else if (
+      messages.length > 0 &&
+      typeof messages[messages.length - 1].id === "number"
+    ) {
+      lastSeenMessageId = messages[messages.length - 1].id;
+    }
+
+    polling = false;
+
+    return pollOnce();
+  } catch (err) {
+    polling = false;
+    console.error(err);
+
+    setTimeout(() => {
+      pollOnce();
+    }, 1000);
+  }
+}
+
+// Start it
+initialChatLoad();
+
+//  ==== SEND CHAT======
+async function sendChat(event) {
   event.preventDefault();
 
-   const name = nameInput.value.trim()
-   const text = textInput.value.trim()
+  const name = nameInput.value.trim();
+  const text = textInput.value.trim();
   // add validation
-  if(!name || !text){
+  if (!name || !text) {
     messageAlert.textContent = "please enter both name and text";
     return;
   }
@@ -75,22 +121,18 @@ async function sendChat(event){
     });
 
     const data = await res.json();
-    if(!res.ok){
+    if (!res.ok) {
       messageAlert.textContent = data.error || "Failed to send message";
       return;
     }
 
     messageAlert.textContent = "";
-
     // clear inputs
-    nameInput.value = ""
-    textInput.value = ""
-
-    loadChat();
-
+    nameInput.value = "";
+    textInput.value = "";
   } catch (err) {
     messageAlert.textContent = "Error sending chat";
-    console.error(err)
+    console.error(err);
   }
 }
 
