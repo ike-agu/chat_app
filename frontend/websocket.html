@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>websocket-Chattiamo</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="app.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Chattiamo</h1>
+    <main>
+      <div id="display-message"></div>
+      <section id="card">
+        <form action="#" id="message-form">
+          <div class="card">
+            <label class="text" for="name-input">
+              Name
+              <input type="text" id="name-input" name="name" placeholder="Enter your name" required>
+            </label>
+          </div>
+
+          <div class="card">
+            <label class="text" for="message-input">
+              message
+              <input type="text" id="message-input" name="message" placeholder="Enter your message" required>
+            </label>
+          </div>
+
+          <button type="submit" id="send-btn">Send</button>
+          <p id="message-alert"></p>
+        </form>
+      </section>
+    </main>
+  </div>
+
+</body>
+
+</html>
