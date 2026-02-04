@@ -11,6 +11,40 @@ const API_URL =
     ? "http://localhost:3000"
     : "https://ike-agu-chat-app-backend.hosting.codeyourfuture.io";
 
+//ws URL for websocket
+const WS_URL =
+  location.hostname === "localhost"
+    ? "ws://localhost:3000"
+    : "wss://ike-agu-chat-app-backend.hosting.codeyourfuture.io";
+
+// =========websocket frontend code connection============
+function connectWebSocket() {
+  const ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    console.log("✅ WS connected");
+  };
+
+  ws.onmessage = (event) => {
+    console.log("📩 WS message:", event.data);
+
+    // show it on the page
+    messageAlert.textContent = `WS: ${event.data}`;
+  };
+
+  ws.onclose = (e) => {
+    console.log("WS closed - reconnecting in 1s...");
+    setTimeout(connectWebSocket, 1000);
+  };
+
+  ws.onerror = (e) => {
+    console.error("WS error:", e);
+    // close triggers reconnect
+    ws.close();
+  };
+}
+
+connectWebSocket();
 
 let lastSeenMessageId = 0;
 let polling = false; //prevents overlapping polls
@@ -73,7 +107,7 @@ async function pollOnce() {
       throw new Error(`GET /chat failed: ${res.status}`);
     }
 
-    const data = await res.json(); // expects { messages, latestId }
+    const data = await res.json(); // data I expect { messages, latestId }
     const messages = data.messages || [];
 
     if (messages.length > 0) {
@@ -102,7 +136,6 @@ async function pollOnce() {
   }
 }
 
-// Start it
 initialChatLoad();
 
 //  ==== SEND CHAT======

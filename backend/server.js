@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import http from "http"
+import { server as WebSocketServer } from "websocket";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -10,7 +12,6 @@ app.use(express.json());
 // in memory array for chat list
 const chatList = [];
 
-//call back for new chats
 const callBackForNewChats = [];
 
 //id counter to track "latestId"
@@ -29,6 +30,7 @@ app.get("/", (req, res) => {
 });
 
 // ==============GET REQUEST=============
+
 app.get("/chat", (req, res) => {
   console.log("Received a request from a chat");
 
@@ -38,7 +40,7 @@ app.get("/chat", (req, res) => {
   const allMessages = displayChat();
   const newMessages = allMessages.filter((message) => message.id > since);
 
-  // If we have new messages, return them immediately
+  //  return new Mex immediately, if available
   if (newMessages.length > 0) {
     const latestId =
       chatList.length > 0 ? chatList[chatList.length - 1].id : since;
@@ -60,11 +62,12 @@ app.get("/chat", (req, res) => {
     if (index !== -1) callBackForNewChats.splice(index, 1);
   });
 
-  // Store this waiting request
+  // Store waiting request
   callBackForNewChats.push(entry);
 });
 
 // =========POST REQUEST ================
+
 app.post("/chat", (req, res) => {
   const body = req.body;
 
@@ -101,6 +104,38 @@ app.post("/chat", (req, res) => {
   return res.status(201).json({ status: "OK", saved: message });
 });
 
-app.listen(port, () => {
+ //================WebSocket server setup==============
+
+const server = http.createServer(app);
+const webSocketServer = new WebSocketServer({
+  httpServer: server,
+  autoAcceptConnections: false,
+});
+
+// For the prompt: always report "Hello" (simple isolated test)
+webSocketServer.on("request", (request) =>{
+  const connection = request.accept(null, request.origin);
+
+  //send Hello immediately
+  connection.sendUTF("Hello from WebSocket")
+
+   // sending Hello every 2 seconds to see “streaming”
+  const interval = setInterval(() => {
+    if (connection.connected) connection.sendUTF("Hello");
+  }, 2000);
+
+   connection.on("close", () => {
+     clearInterval(interval);
+     console.log("WebSocket client disconnected");
+   });
+
+   connection.on("error", (err) => {
+     clearInterval(interval);
+     console.error("WebSocket error:", err);
+   });
+
+})
+
+server.listen(port, () => {
   console.log(`server listening on port: ${port}`);
 });
