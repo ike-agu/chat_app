@@ -156,6 +156,4 @@ Open the URL shown in the terminal in your browser.
 * Message timestamps
 * Typing indicators
 
-```
 
----
