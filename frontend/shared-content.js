@@ -17,6 +17,23 @@ const WS_URL =
     ? "ws://localhost:3000"
     : "wss://ike-agu-chat-app-backend.hosting.codeyourfuture.io";
 
+//     //helper func for message liked
+// async function likeMessage(id){
+//   await fetch (`${API_URL}/chat/${id}/like`, {method: "POST"});
+// }
+//  //helper func for message disliked
+// async function dislikeMessage(id) {
+//   await fetch(`${API_URL}/chat/${id}/dislike`, { method: "POST" });
+// }
+
+async function likeMessage(id) {
+  await fetch(`${API_URL}/chat/${id}/like`, { method: "POST" });
+}
+
+async function dislikeMessage(id) {
+  await fetch(`${API_URL}/chat/${id}/dislikes`, { method: "POST" });
+}
+
 function appendMessages(messages) {
   // Check scroll position BEFORE rendering
   const isNearBottom =
@@ -37,8 +54,53 @@ function appendMessages(messages) {
     textEl.className = "chat-text";
     textEl.textContent = element.text;
 
+    const reactionsRow = document.createElement("div");
+    reactionsRow.className = "reactions-row";
+
+    // Only show counts if non-zero
+    const likes = element.likes || 0;
+    const dislikes = element.dislikes || 0;
+
+    if (likes > 0 || dislikes > 0) {
+      const counts = document.createElement("span");
+      counts.className = "reaction-counts";
+      counts.textContent = `👍 ${likes}  👎 ${dislikes}`;
+      reactionsRow.appendChild(counts);
+    }
+
+    //element for like message
+    const likeBtn = document.createElement("button");
+    likeBtn.type = "button";
+    likeBtn.textContent = "Like";
+
+    likeBtn.addEventListener("click", async () => {
+      try {
+        await likeMessage(element.id);
+      } catch (err) {
+        console.error(err);
+        messageAlert.textContent = "Failed to like message";
+      }
+    });
+
+    //element for dislike message
+    const dislikeBtn = document.createElement("button");
+    dislikeBtn.type = "button";
+    dislikeBtn.textContent = "Dislike";
+
+    dislikeBtn.addEventListener("click", async () => {
+      try {
+        await dislikeMessage(element.id);
+      } catch (err) {
+        console.error(err);
+        messageAlert.textContent = "Failed to dislike message";
+      }
+    });
+
+    reactionsRow.appendChild(likeBtn);
+    reactionsRow.appendChild(dislikeBtn);
     messageAreaDiv.appendChild(nameEl);
     messageAreaDiv.appendChild(textEl);
+    messageAreaDiv.appendChild(reactionsRow);
     displayChatArea.appendChild(messageAreaDiv);
   }
 
