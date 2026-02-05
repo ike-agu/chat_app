@@ -1,4 +1,7 @@
 // =========websocket frontend code============
+
+let lastSeenMessageId = 0;
+
 function connectWebSocket() {
   const ws = new WebSocket(WS_URL);
 
@@ -25,4 +28,31 @@ function connectWebSocket() {
   };
 }
 
+// =======
+
+async function loadExistingMessages() {
+  try {
+    displayChatArea.textContent = "";
+    lastSeenMessageId = 0;
+
+    const res = await fetch(`${API_URL}/chat?since=0`);
+    if (!res.ok) throw new Error(`GET/ chat failed: ${res.status}`);
+
+    const data = await res.json();
+    const messages = data.messages || [];
+
+    if (messages.length > 0) {
+      appendMessages(messages);
+    }
+
+    if (typeof data.latestId === "number") {
+      lastSeenMessageId = data.latestId;
+    }
+  } catch (err) {
+    console.error(err);
+    messageAlert.textContent = "Failed to load";
+  }
+}
+
+loadExistingMessages();
 connectWebSocket();
