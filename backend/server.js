@@ -25,6 +25,8 @@ function displayChat() {
     id: item.id,
     name: item.name,
     text: item.text,
+    likes: item.likes ?? 0,
+    dislikes: item.dislikes ?? 0,
   }));
 }
 
@@ -88,7 +90,7 @@ app.post("/chat", (req, res) => {
     return res.status(400).json({ error: "Text cannot be empty" });
   }
 
-  const message = { id: nextId++, name, text };
+  const message = { id: nextId++, name, text, likes:0, dislikes:0 };
   chatList.push(message);
 
   //when new mex is sent via ws, broadcast it
