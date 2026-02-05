@@ -10,10 +10,22 @@ function connectWebSocket() {
   };
 
   ws.onmessage = (event) => {
-    console.log("📩 WS message:", event.data);
+    try {
+      const data = JSON.parse(event.data);
 
-    // show it on the page
-    messageAlert.textContent = `WS: ${event.data}`;
+      if (data.type === "chat" && data.message) {
+        const message = data.message;
+
+        // ignore duplicates
+        if (message.id <= lastSeenMessageId) return;
+
+        appendMessages([message]);
+        lastSeenMessageId = message.id;
+      }
+    } catch (err) {
+      // not JSON (e.g. "Hello from WebSocket")
+      console.log("Non-chat WS message:", event.data);
+    }
   };
 
   ws.onclose = (e) => {
@@ -27,8 +39,6 @@ function connectWebSocket() {
     ws.close();
   };
 }
-
-// =======
 
 async function loadExistingMessages() {
   try {
