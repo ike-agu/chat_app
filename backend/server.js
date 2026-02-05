@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import http from "http"
+import http from "http";
 import { server as WebSocketServer } from "websocket";
 
 const app = express();
@@ -13,6 +13,9 @@ app.use(express.json());
 const chatList = [];
 
 const callBackForNewChats = [];
+
+//connected ws client list
+const wsClients = [];
 
 //id counter to track "latestId"
 let nextId = 1;
@@ -30,7 +33,6 @@ app.get("/", (req, res) => {
 });
 
 // ==============GET REQUEST=============
-
 app.get("/chat", (req, res) => {
   console.log("Received a request from a chat");
 
@@ -67,7 +69,6 @@ app.get("/chat", (req, res) => {
 });
 
 // =========POST REQUEST ================
-
 app.post("/chat", (req, res) => {
   const body = req.body;
 
@@ -90,6 +91,13 @@ app.post("/chat", (req, res) => {
   const message = { id: nextId++, name, text };
   chatList.push(message);
 
+  //when new mex is sent via ws, broadcast it
+  for (const client of wsClients) {
+    if (client.connected) {
+      client.sendUTF(JSON.stringify({ type: "chat", message }));
+    }
+  }
+
   //respond to any waiting long poll
   const allMessages = displayChat();
   const latestId = message.id;
@@ -104,37 +112,29 @@ app.post("/chat", (req, res) => {
   return res.status(201).json({ status: "OK", saved: message });
 });
 
- //================WebSocket server setup==============
-
+//================WebSocket server setup==============
 const server = http.createServer(app);
 const webSocketServer = new WebSocketServer({
   httpServer: server,
   autoAcceptConnections: false,
 });
 
-// For the prompt: always report "Hello" (simple isolated test)
-webSocketServer.on("request", (request) =>{
+webSocketServer.on("request", (request) => {
   const connection = request.accept(null, request.origin);
 
-  //send Hello immediately
-  connection.sendUTF("Hello from WebSocket")
+  wsClients.push(connection);
 
-   // sending Hello every 2 seconds to see “streaming”
-  const interval = setInterval(() => {
-    if (connection.connected) connection.sendUTF("Hello");
-  }, 2000);
+  connection.on("close", () => {
+    console.log("WebSocket client disconnected");
+    const index = wsClients.indexOf(connection);
+    if (index !== -1) wsClients.splice(index, 1);
+  });
 
-   connection.on("close", () => {
-     clearInterval(interval);
-     console.log("WebSocket client disconnected");
-   });
-
-   connection.on("error", (err) => {
-     clearInterval(interval);
-     console.error("WebSocket error:", err);
-   });
-
-})
+  connection.on("error", (err) => {
+    clearInterval(interval);
+    console.error("WebSocket error:", err);
+  });
+});
 
 server.listen(port, () => {
   console.log(`server listening on port: ${port}`);
