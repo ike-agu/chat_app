@@ -131,7 +131,6 @@ webSocketServer.on("request", (request) => {
   });
 
   connection.on("error", (err) => {
-    clearInterval(interval);
     console.error("WebSocket error:", err);
   });
 });
