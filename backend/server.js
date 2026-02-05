@@ -30,6 +30,17 @@ function displayChat() {
   }));
 }
 
+//========helper func to notify websocket clients ==========
+function broadcastToWsClients(payload){
+  const msg = JSON.stringify(payload);
+
+  for(const client of wsClients){
+    if(client.connected) {
+      client.sendUTF(msg);
+    }
+  }
+}
+
 app.get("/", (req, res) => {
   res.send("Hello, from the server!");
 });
@@ -100,6 +111,8 @@ app.post("/chat", (req, res) => {
     }
   }
 
+
+
   //respond to any waiting long poll
   const allMessages = displayChat();
   const latestId = message.id;
@@ -113,6 +126,55 @@ app.post("/chat", (req, res) => {
 
   return res.status(201).json({ status: "OK", saved: message });
 });
+
+//======== POST REQ Like & Dislike ======
+
+app.post("/chat/:id/like", (req, res) =>{
+  const id = Number(req.params.id)
+
+  const msg = chatList.find((m) => m.id === id);
+  if(!msg){
+    return res.status(404).json({ error: "Message not found" });
+  }
+  msg.likes = (msg.likes || 0) + 1;
+
+  //notify all ws clients
+  broadcastToWsClients({
+    type: "reaction",
+    id: msg.id,
+    likes: msg.likes,
+    dislikes:msg.dislikes || 0,
+  });
+
+  return res.json({id:msg.id, likes: msg.likes, dislikes: msg.dislikes || 0});
+});
+
+app.post("/chat/:id/dislikes", (req, res) =>{
+  const id = Number(req.params.id);
+
+  const msg = chatList.find((m) => m.id === id);
+  if (!msg) {
+    return res.status(404).json({ error: "Message not found" });
+  }
+
+   msg.dislikes = (msg.dislikes || 0) + 1;
+
+   // notify all websocket clients
+  broadcastToWsClients({
+    type: "reaction",
+    id: msg.id,
+    likes: msg.likes || 0,
+    dislikes: msg.dislikes,
+  });
+
+  return res.json({
+    id: msg.id,
+    likes: msg.likes || 0,
+    dislikes: msg.dislikes,
+  });
+
+})
+
 
 //================WebSocket server setup==============
 const server = http.createServer(app);
