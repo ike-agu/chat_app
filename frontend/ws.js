@@ -85,5 +85,8 @@ async function loadExistingMessages() {
   }
 }
 
-loadExistingMessages();
-connectWebSocket();
+//wait for initial load before connecting WebSocket
+(async function start() {
+  await loadExistingMessages();
+  connectWebSocket();
+})();
