@@ -13,11 +13,13 @@ Both implementations are included **on the same branch** and share common code w
 ## Features
 - View existing chat messages
 - Send new chat messages
+- Like and dislike individual messages
 - Two real-time update implementations:
   - Polling (near real-time)
   - WebSockets (real-time)
+- Live updates when messages receive likes or dislikes
 - Input validation and user feedback
-- Simple and clean UI
+- Simple, clean, and responsive UI
 
 ---
 
@@ -37,27 +39,30 @@ Both implementations are included **on the same branch** and share common code w
 - An Express server exposes REST endpoints:
   - `GET /chat` – retrieves chat messages (supports `since` query param)
   - `POST /chat` – validates and stores new chat messages
+  - `POST /chat/:id/like` – increments likes for a message
+  - `POST /chat/:id/dislike` – increments dislikes for a message
 - Messages are stored in memory while the server is running.
 - Long polling is supported for the polling implementation.
-- A WebSocket server broadcasts new chat messages to connected clients.
+- A WebSocket server broadcasts new chat messages and reaction updates (likes/dislikes) to connected clients.
 - CORS and JSON body parsing are enabled.
 
 ### Frontend
-The frontend contains **two separate pages**, which shows the different approaches:
+The frontend contains **two separate pages**, showing the different approaches:
 
 #### Polling Version
 - Fetches existing messages when the page loads.
-- Continuously polls the server using `/chat?since=...` to receive new messages.
+- Continuously polls the server using `/chat?since=...` to receive new messages and reaction updates.
 
 #### WebSocket Version
 - Fetches existing messages once when the page loads.
 - Opens a WebSocket connection to the server.
-- Receives new chat messages instantly via WebSocket broadcasts.
+- Receives new chat messages and reaction updates instantly via WebSocket broadcasts.
 
 Shared frontend code is used for:
 - DOM setup
 - Rendering messages
 - Sending messages
+- Rendering and updating like/dislike counts
 - Configuration values
 
 ---
@@ -139,13 +144,16 @@ Open the URL shown in the terminal in your browser.
 
    * via polling on the polling page
    * instantly via WebSockets on the WebSocket page
-5. Open multiple tabs to observe real-time behavior.
+5. Click **Like** or **Dislike** on any message to react.
+6. Reaction counts update in real time across connected clients.
+7. Open multiple tabs to observe real-time behaviour.
 
 ---
 
 ## Notes
 
 * Data is stored in memory and resets when the server restarts.
+* Basic responsive styling is included for smaller screens.
 
 ---
 
@@ -155,5 +163,3 @@ Open the URL shown in the terminal in your browser.
 * User authentication
 * Message timestamps
 * Typing indicators
-
-
