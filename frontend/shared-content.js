@@ -17,25 +17,17 @@ const WS_URL =
     ? "ws://localhost:3000"
     : "wss://ike-agu-chat-app-backend.hosting.codeyourfuture.io";
 
-//     //helper func for message liked
-// async function likeMessage(id){
-//   await fetch (`${API_URL}/chat/${id}/like`, {method: "POST"});
-// }
-//  //helper func for message disliked
-// async function dislikeMessage(id) {
-//   await fetch(`${API_URL}/chat/${id}/dislike`, { method: "POST" });
-// }
-
+//helper func for message liked
 async function likeMessage(id) {
   await fetch(`${API_URL}/chat/${id}/like`, { method: "POST" });
 }
-
+//helper func for message disliked
 async function dislikeMessage(id) {
   await fetch(`${API_URL}/chat/${id}/dislikes`, { method: "POST" });
 }
 
 function appendMessages(messages) {
-  // Check scroll position BEFORE rendering
+// Check scroll position BEFORE rendering
   const isNearBottom =
     displayChatArea.scrollHeight -
       displayChatArea.scrollTop -
@@ -45,6 +37,7 @@ function appendMessages(messages) {
   for (const element of messages) {
     const messageAreaDiv = document.createElement("div");
     messageAreaDiv.className = "chat-message";
+    messageAreaDiv.dataset.id = element.id;
 
     const nameEl = document.createElement("div");
     nameEl.className = "chat-name";

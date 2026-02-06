@@ -12,7 +12,7 @@ function connectWebSocket() {
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
-
+      // handles chat
       if (data.type === "chat" && data.message) {
         const message = data.message;
 
@@ -21,6 +21,27 @@ function connectWebSocket() {
 
         appendMessages([message]);
         lastSeenMessageId = message.id;
+      }
+
+      // ====handles the reaction count=====
+      if (data.type === "reaction") {
+        const { id, likes, dislikes } = data;
+
+        const messageEl = document.querySelector(
+          `.chat-message[data-id="${id}"]`,
+        );
+
+        if (!messageEl) return;
+
+        let countsEl = messageEl.querySelector(".reaction-counts");
+
+        if (!countsEl) {
+          countsEl = document.createElement("span");
+          countsEl.className = "reaction-counts";
+          messageEl.appendChild(countsEl);
+        }
+
+        countsEl.textContent = `👍 ${likes}  👎 ${dislikes}`;
       }
     } catch (err) {
       // not JSON (e.g. "Hello from WebSocket")
