@@ -140,3 +140,22 @@ input::placeholder {
 .reactions-row button:hover {
   background-color: #e0e0e0;
 }
+
+
+/* media query */
+@media (max-width: 768px) {
+  .container {
+    width: 95%;
+    padding: 1.5rem;
+  }
+
+  #display-message {
+    width: 100%;
+    min-height: 250px;
+  }
+
+  input[type="text"] {
+    width: 100%;
+  }
+}
+
