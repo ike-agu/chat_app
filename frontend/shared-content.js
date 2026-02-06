@@ -64,7 +64,7 @@ function appendMessages(messages) {
     //element for like message
     const likeBtn = document.createElement("button");
     likeBtn.type = "button";
-    likeBtn.textContent = "Like";
+    likeBtn.textContent = "👍 Like";
 
     likeBtn.addEventListener("click", async () => {
       try {
@@ -78,7 +78,7 @@ function appendMessages(messages) {
     //element for dislike message
     const dislikeBtn = document.createElement("button");
     dislikeBtn.type = "button";
-    dislikeBtn.textContent = "Dislike";
+    dislikeBtn.textContent = "👎 Dislike";
 
     dislikeBtn.addEventListener("click", async () => {
       try {
