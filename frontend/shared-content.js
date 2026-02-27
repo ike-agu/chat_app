@@ -17,17 +17,36 @@ const WS_URL =
     ? "ws://localhost:3000"
     : "wss://ike-agu-chat-app-backend.hosting.codeyourfuture.io";
 
+function getClientId() {
+  let id = localStorage.getItem("clientId");
+  if (!id) {
+    id = crypto.randomUUID(); //generates client unique id
+    localStorage.setItem("clientId", id);
+  }
+  return id;
+}
+
 //helper func for message liked
 async function likeMessage(id) {
-  await fetch(`${API_URL}/chat/${id}/like`, { method: "POST" });
+  const clientId = getClientId();
+  await fetch(`${API_URL}/chat/${id}/like`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ clientId }),
+  });
 }
 //helper func for message disliked
 async function dislikeMessage(id) {
-  await fetch(`${API_URL}/chat/${id}/dislikes`, { method: "POST" });
+  const clientId = getClientId();
+  await fetch(`${API_URL}/chat/${id}/dislikes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ clientId }),
+  });
 }
 
 function appendMessages(messages) {
-// Check scroll position BEFORE rendering
+  // Check scroll position BEFORE rendering
   const isNearBottom =
     displayChatArea.scrollHeight -
       displayChatArea.scrollTop -

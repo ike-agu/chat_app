@@ -21,24 +21,40 @@ const wsClients = [];
 let nextId = 1;
 
 function displayChat() {
-  return chatList.map((item) => ({
-    id: item.id,
-    name: item.name,
-    text: item.text,
-    likes: item.likes ?? 0,
-    dislikes: item.dislikes ?? 0,
-  }));
+  return chatList.map((item) => {
+    const { likes, dislikes } = getReactionCounts(item);
+    return {
+      id: item.id,
+      name: item.name,
+      text: item.text,
+      likes,
+      dislikes,
+    };
+  });
 }
 
 //========helper func to notify websocket clients ==========
-function broadcastToWsClients(payload){
+function broadcastToWsClients(payload) {
   const msg = JSON.stringify(payload);
 
-  for(const client of wsClients){
-    if(client.connected) {
+  for (const client of wsClients) {
+    if (client.connected) {
       client.sendUTF(msg);
     }
   }
+}
+
+//======helper to compute count==============
+function getReactionCounts(message) {
+  const reactions = message.reactions || {};
+  let likes = 0;
+  let dislikes = 0;
+
+  for (const value of Object.values(reactions)) {
+    if (value === "like") likes++;
+    if (value === "dislike") dislikes++;
+  }
+  return { likes, dislikes };
 }
 
 app.get("/", (req, res) => {
@@ -101,17 +117,23 @@ app.post("/chat", (req, res) => {
     return res.status(400).json({ error: "Text cannot be empty" });
   }
 
-  const message = { id: nextId++, name, text, likes:0, dislikes:0 };
+  const message = { id: nextId++, name, text, reactions: {} };
   chatList.push(message);
 
-  //when new mex is sent via ws, broadcast it
-  for (const client of wsClients) {
-    if (client.connected) {
-      client.sendUTF(JSON.stringify({ type: "chat", message }));
-    }
-  }
+  // compute reaction counts (will be 0 initially)
+  const { likes, dislikes } = getReactionCounts(message);
 
-
+  // broadcast message
+  broadcastToWsClients({
+    type: "chat",
+    message: {
+      id: message.id,
+      name: message.name,
+      text: message.text,
+      likes,
+      dislikes,
+    },
+  });
 
   //respond to any waiting long poll
   const allMessages = displayChat();
@@ -129,52 +151,52 @@ app.post("/chat", (req, res) => {
 
 //======== POST REQ Like & Dislike ======
 
-app.post("/chat/:id/like", (req, res) =>{
-  const id = Number(req.params.id)
-
-  const msg = chatList.find((m) => m.id === id);
-  if(!msg){
-    return res.status(404).json({ error: "Message not found" });
-  }
-  msg.likes = (msg.likes || 0) + 1;
-
-  //notify all ws clients
-  broadcastToWsClients({
-    type: "reaction",
-    id: msg.id,
-    likes: msg.likes,
-    dislikes:msg.dislikes || 0,
-  });
-
-  return res.json({id:msg.id, likes: msg.likes, dislikes: msg.dislikes || 0});
-});
-
-app.post("/chat/:id/dislikes", (req, res) =>{
+app.post("/chat/:id/like", (req, res) => {
   const id = Number(req.params.id);
-
+  const { clientId } = req.body || {};
+  if (!clientId) return res.status(400).json({ error: "clientId is required" });
   const msg = chatList.find((m) => m.id === id);
   if (!msg) {
     return res.status(404).json({ error: "Message not found" });
   }
+  msg.reactions = msg.reactions || {};
+  if (msg.reactions[clientId] === "like") {
+    const counts = getReactionCounts(msg);
+    return res.json({ id: msg.id, ...counts });
+  }
+  msg.reactions[clientId] = "like";
+  const counts = getReactionCounts(msg);
 
-   msg.dislikes = (msg.dislikes || 0) + 1;
+  //notify all ws clients
+  broadcastToWsClients({ type: "reaction", id: msg.id, ...counts });
+  return res.json({ id: msg.id, ...counts });
+});
 
-   // notify all websocket clients
-  broadcastToWsClients({
-    type: "reaction",
-    id: msg.id,
-    likes: msg.likes || 0,
-    dislikes: msg.dislikes,
-  });
+app.post("/chat/:id/dislikes", (req, res) => {
+  const id = Number(req.params.id);
+  const { clientId } = req.body || {};
+  if (!clientId) return res.status(400).json({ error: "clientId is required" });
 
-  return res.json({
-    id: msg.id,
-    likes: msg.likes || 0,
-    dislikes: msg.dislikes,
-  });
+  const msg = chatList.find((m) => m.id === id);
 
-})
+  if (!msg) {
+    return res.status(404).json({ error: "Message not found" });
+  }
 
+  msg.reactions = msg.reactions || {};
+
+  if (msg.reactions[clientId] === "dislike") {
+    const counts = getReactionCounts(msg);
+    return res.json({ id: msg.id, ...counts });
+  }
+
+  msg.reactions[clientId] = "dislike";
+  const counts = getReactionCounts(msg);
+
+  // notify websocket clients
+  broadcastToWsClients({ type: "reaction", id: msg.id, ...counts });
+  return res.json({ id: msg.id, ...counts });
+});
 
 //================WebSocket server setup==============
 const server = http.createServer(app);
