@@ -75,6 +75,8 @@ backend/
 server.js
 
 frontend/
+index.html
+landing.css
 polling.html
 polling.js
 ws.html

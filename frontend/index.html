@@ -1,17 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chattiamo</title>
+  <link rel="stylesheet" href="landing.css">
 </head>
 
 <body>
-  <h1>Chattiamo</h1>
-  <ul>
-    <li><a href="/polling.html">Polling version</a></li>
-    <li><a href="/ws.html">WebSocket version</a></li>
-  </ul>
+  <div class="container">
+    <h1>Chattiamo</h1>
+    <p class="subtitle">
+      A real-time chat application demonstrating Polling and WebSocket implementations.
+    </p>
+    <main>
+      <div class="options">
+        <a href="/polling.html" class="card">
+          <h2>Polling Version</h2>
+          <p>Uses HTTP long polling to receive new messages</p>
+        </a>
+
+        <a href="/ws.html" class="card">
+          <h2>Websocket Version</h2>
+          <p>Uses Websocket for real-time updates</p>
+        </a>
+      </div>
+    </main>
+  </div>
 </body>
 
 </html>
