@@ -6,16 +6,12 @@ const messageAlert = document.getElementById("message-alert");
 
 const form = document.getElementById("message-form");
 
-const API_URL =
-  location.hostname === "localhost"
-    ? "http://localhost:3000"
-    : "https://ike-agu-chat-app-backend.hosting.codeyourfuture.io";
+const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1"
+
+const API_URL = isLocal ? "http://localhost:3000" : "https://ike-agu-chat-app-backend.hosting.codeyourfuture.io";
 
 //ws URL for websocket
-const WS_URL =
-  location.hostname === "localhost"
-    ? "ws://localhost:3000"
-    : "wss://ike-agu-chat-app-backend.hosting.codeyourfuture.io";
+const WS_URL = isLocal ? "ws://localhost:3000" : "wss://ike-agu-chat-app-backend.hosting.codeyourfuture.io";
 
 function getClientId() {
   let id = localStorage.getItem("clientId");
